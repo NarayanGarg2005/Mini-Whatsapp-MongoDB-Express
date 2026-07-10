@@ -24,8 +24,13 @@ async function main() {
 
 //Index Route - show all chats
 app.get("/chats",async (req,res) => {
-    let chats = await Chat.find();
-    res.render("index.ejs",{ chats });
+    try {
+        let chats = await Chat.find();
+        res.render("index.ejs",{ chats });
+    } 
+    catch(err) {
+        next(err);
+    }
 });
 
 //New Route - render form to add info for new chat
@@ -54,26 +59,41 @@ app.post("/chats",(req,res) => {
 
 //Edit Route
 app.get("/chats/:id/edit", async (req,res) => {
-    let { id } = req.params;
-    let chat = await Chat.findById(id);
-    res.render("edit.ejs",{ chat });
+    try {
+        let { id } = req.params;
+        let chat = await Chat.findById(id);
+        res.render("edit.ejs",{ chat });
+    }
+    catch(err) {
+        next(err);
+    }
 })
 
 //Update Route
 app.put("/chats/:id",async (req,res) => {
-    let { id } = req.params;
-    let {msg: newMsg} = req.body;
-    let updatedChat = await Chat.findByIdAndUpdate(id,
-        {msg: newMsg,updated_at: new Date},
-        {runValidators: true,new: true});
-    res.redirect("/chats");
+    try {
+        let { id } = req.params;
+        let {msg: newMsg} = req.body;
+        let updatedChat = await Chat.findByIdAndUpdate(id,
+            {msg: newMsg,updated_at: new Date},
+            {runValidators: true,new: true});
+        res.redirect("/chats");
+    }
+    catch(err) {
+        next(err);
+    }
 })
 
 //Destroy Route
 app.delete("/chats/:id",async (req,res) => {
-    let { id } = req.params;
-    await Chat.findByIdAndDelete(id);
-    res.redirect("/chats");
+    try {
+        let { id } = req.params;
+        await Chat.findByIdAndDelete(id);
+        res.redirect("/chats");
+    }
+    catch(err) {
+        next(err);
+    }
 })
 
 //Root route

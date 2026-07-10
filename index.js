@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 const Chat = require("./models/chats.js");
 const methodOverride = require("method-override");
+const ExpressError = require("./ExpressError.js");
 
 app.set("views",path.join(__dirname,"views"));
 app.set("view engine","ejs");
@@ -23,7 +24,7 @@ async function main() {
 }
 
 //Index Route - show all chats
-app.get("/chats",async (req,res) => {
+app.get("/chats",async (req,res,next) => {
     try {
         let chats = await Chat.find();
         res.render("index.ejs",{ chats });
@@ -58,10 +59,13 @@ app.post("/chats",(req,res) => {
 })
 
 //Edit Route
-app.get("/chats/:id/edit", async (req,res) => {
+app.get("/chats/:id/edit", async (req,res,next) => {
     try {
         let { id } = req.params;
         let chat = await Chat.findById(id);
+        if(!chat) {
+            return next(new ExpressError(404,"Chat not found"));
+        }
         res.render("edit.ejs",{ chat });
     }
     catch(err) {
@@ -70,7 +74,7 @@ app.get("/chats/:id/edit", async (req,res) => {
 })
 
 //Update Route
-app.put("/chats/:id",async (req,res) => {
+app.put("/chats/:id",async (req,res,next) => {
     try {
         let { id } = req.params;
         let {msg: newMsg} = req.body;
@@ -85,7 +89,7 @@ app.put("/chats/:id",async (req,res) => {
 })
 
 //Destroy Route
-app.delete("/chats/:id",async (req,res) => {
+app.delete("/chats/:id",async (req,res,next) => {
     try {
         let { id } = req.params;
         await Chat.findByIdAndDelete(id);
@@ -100,6 +104,12 @@ app.delete("/chats/:id",async (req,res) => {
 app.get('/', (req, res) => {
   res.send('Working');
 });
+
+//Error Handling Middleware
+app.use((err,req,res,next) => {
+    let { status=500, message="Some error occured"} = err;
+    res.status(status).send(message);
+})
 
 app.listen(8080, () => {
   console.log('Server is listening to port 8080');

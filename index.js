@@ -40,42 +40,48 @@ app.get("/chats/new",(req,res) => {
 });
 
 //Post Route
-app.post("/chats",(req,res) => {
-    let {from, to, msg} = req.body;
-    let newChat = new Chat({
-        from: from,
-        to: to,
-        msg: msg,
-        created_at: new Date()
-    });
-    newChat.save()
-        .then((res) => {
-            console.log(res);
-        })
-        .catch((err) => {
-            console.log(err);
-        })
-    res.redirect("/chats");
-})
-
-//Edit Route
-app.get("/chats/:id/edit", async (req,res,next) => {
+app.post("/chats", async (req,res,next) => {
     try {
-        let { id } = req.params;
-        let chat = await Chat.findById(id);
-        if(!chat) {
-            return next(new ExpressError(404,"Chat not found"));
-        }
-        res.render("edit.ejs",{ chat });
+        let {from, to, msg} = req.body;
+        let newChat = new Chat({
+            from: from,
+            to: to,
+            msg: msg,
+            created_at: new Date()
+        });
+        await newChat.save()
+            .then((res) => {
+                console.log(res);
+            })
+            .catch((err) => {
+                console.log(err);
+            })
+        res.redirect("/chats");
     }
     catch(err) {
         next(err);
     }
 })
 
+function wrapAsync(fn) {
+    return function(req,res,next) {
+        fn(req,res,next).catch(err => next(err));
+    };
+}
+
+//Edit Route
+app.get("/chats/:id/edit", wrapAsync(async (req,res,next) => {
+        let { id } = req.params;
+        let chat = await Chat.findById(id);
+        if(!chat) {
+            return next(new ExpressError(404,"Chat not found"));
+        }
+        res.render("edit.ejs",{ chat });
+        }
+));
+
 //Update Route
-app.put("/chats/:id",async (req,res,next) => {
-    try {
+app.put("/chats/:id",wrapAsync(async (req,res,next) => {
         let { id } = req.params;
         let {msg: newMsg} = req.body;
         let updatedChat = await Chat.findByIdAndUpdate(id,
@@ -83,22 +89,15 @@ app.put("/chats/:id",async (req,res,next) => {
             {runValidators: true,new: true});
         res.redirect("/chats");
     }
-    catch(err) {
-        next(err);
-    }
-})
+))
 
 //Destroy Route
-app.delete("/chats/:id",async (req,res,next) => {
-    try {
+app.delete("/chats/:id",wrapAsync(async (req,res,next) => {
         let { id } = req.params;
         await Chat.findByIdAndDelete(id);
         res.redirect("/chats");
     }
-    catch(err) {
-        next(err);
-    }
-})
+))
 
 //Root route
 app.get('/', (req, res) => {
